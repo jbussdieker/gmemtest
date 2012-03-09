@@ -17,17 +17,18 @@ func main() {
 	statTimer := time.NewTicker(10)
 	var counter uint
 	for {
-		runtime.UpdateMemStats()
-		MemAlloc := runtime.MemStats.Alloc/1024
-		MemTotalAlloc := runtime.MemStats.TotalAlloc/1024
+		var m runtime.MemStats
+		runtime.ReadMemStats(&m)
+		MemAlloc := m.Alloc/1024
+		MemTotalAlloc := m.TotalAlloc/1024
 		var MaxMem uint64
 		rusage := &syscall.Rusage{}
 		ret := syscall.Getrusage(0, rusage)
-		if ret == 0 && rusage.Maxrss > 0 {
+		if ret == nil && rusage.Maxrss > 0 {
 			MaxMem = uint64(rusage.Maxrss)
 		}
 
-		timestamp := time.Seconds()
+		timestamp := time.Now().Unix()
 
 		version := strings.Split(runtime.Version(), " ")[0]
 		prefix := fmt.Sprintf("carbon.testing.%s.", version)
@@ -35,7 +36,7 @@ func main() {
 		buf += fmt.Sprintf(prefix + "mem_allocated %d %d\n", MemAlloc, timestamp)
 		buf += fmt.Sprintf(prefix + "mem_total %d %d\n", MemTotalAlloc, timestamp)
 		counter++
-		if (counter % 100000) == 0 {
+		if (counter % 10000) == 0 {
 			println(buf)
 			conn.Write([]byte(buf))
 		}
